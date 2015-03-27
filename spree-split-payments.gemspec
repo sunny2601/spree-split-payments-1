@@ -1,25 +1,44 @@
-# encoding: UTF-8
+# -*- encoding: utf-8 -*-
+# stub: spree-split-payments 1.0.0 ruby lib
+
 Gem::Specification.new do |s|
-  s.platform    = Gem::Platform::RUBY
-  s.name        = 'spree-split-payments'
-  s.version     = '1.0.0'
-  s.required_ruby_version = '>= 1.9.3'
+  s.name = "spree-split-payments"
+  s.version = "1.0.0"
 
-  s.author    = 'Manish Kangia'
-  s.email     = 'info@vinsol.com'
-  s.homepage  = 'http://vinsol.com'
+  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
+  s.require_paths = ["lib"]
+  s.authors = ["Manish Kangia"]
+  s.date = "2015-03-26"
+  s.email = "info@vinsol.com"
+  s.files = [".gitignore", ".rspec", ".travis.yml", "Gemfile", "LICENSE", "README.md", "Rakefile", "app/assets/javascripts/spree/backend/spree-split-payments.js", "app/assets/javascripts/spree/frontend/spree-split-payments.js", "app/assets/stylesheets/spree/backend/spree-split-payments.css", "app/assets/stylesheets/spree/frontend/spree-split-payments.css", "app/models/spree/order_decorator.rb", "app/models/spree/payment_decorator.rb", "app/models/spree/payment_method_decorator.rb", "app/overrides/add_partial_payment_form_fields_admin.rb", "app/overrides/add_split_payments_to_payment_form.rb", "app/views/shared/_split_payments.html.erb", "bin/rails", "config/locales/en.yml", "config/routes.rb", "db/migrate/20140318063048_add_partial_payment_fields_to_spree_payment_method.rb", "db/migrate/20140318063049_add_is_partial_to_spree_payment.rb", "lib/generators/spree_split_payments/install/install_generator.rb", "lib/spree-split-payments.rb", "lib/spree_split_payments/engine.rb", "lib/spree_split_payments/factories.rb", "spec/models/spree/order_decorator_spec.rb", "spec/models/spree/payment_decorator_spec.rb", "spec/models/spree/payment_method_decorator_spec.rb", "spec/spec_helper.rb", "spec/support/partial_payment_methods.rb", "spree-split-payments.gemspec"]
+  s.homepage = "http://vinsol.com"
+  s.licenses = ["MIT"]
+  s.required_ruby_version = Gem::Requirement.new(">= 1.9.3")
+  s.requirements = ["none"]
+  s.rubygems_version = "2.2.2"
+  s.summary = "Provides the feature for a Spree store to allow user to club payment methods to pay for the order"
 
-  s.summary   = 'Provides the feature for a Spree store to allow user to club payment methods to pay for the order'
-  s.license   = 'MIT'
+  # if s.respond_to? :specification_version then
+  #   s.specification_version = 4
 
-  s.files       = `git ls-files`.split("\n")
-  s.require_path = 'lib'
-  s.requirements << 'none'
-
-  s.add_dependency 'spree_core', '~> 2.2.0'
-
-  s.add_development_dependency 'database_cleaner'
-  s.add_development_dependency 'rspec-rails',  '~> 2.13'
-  s.add_development_dependency 'simplecov'
-  s.add_development_dependency 'sqlite3'
+  #   if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+  #     s.add_runtime_dependency(%q<spree_core>, ["~> 2.2.0"])
+  #     s.add_development_dependency(%q<database_cleaner>, [">= 0"])
+  #     s.add_development_dependency(%q<rspec-rails>, ["~> 2.13"])
+  #     s.add_development_dependency(%q<simplecov>, [">= 0"])
+  #     s.add_development_dependency(%q<sqlite3>, [">= 0"])
+  #   else
+  #     s.add_dependency(%q<spree_core>, ["~> 2.2.0"])
+  #     s.add_dependency(%q<database_cleaner>, [">= 0"])
+  #     s.add_dependency(%q<rspec-rails>, ["~> 2.13"])
+  #     s.add_dependency(%q<simplecov>, [">= 0"])
+  #     s.add_dependency(%q<sqlite3>, [">= 0"])
+  #   end
+  # else
+  #   s.add_dependency(%q<spree_core>, ["~> 2.2.0"])
+  #   s.add_dependency(%q<database_cleaner>, [">= 0"])
+  #   s.add_dependency(%q<rspec-rails>, ["~> 2.13"])
+  #   s.add_dependency(%q<simplecov>, [">= 0"])
+  #   s.add_dependency(%q<sqlite3>, [">= 0"])
+  # end
 end

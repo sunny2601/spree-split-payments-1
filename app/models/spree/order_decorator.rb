@@ -39,19 +39,33 @@ Spree::Order.class_eval do
     if has_checkout_step?("payment") && self.payment?
       insert_source_params
 
-      if @updating_params[:order][:payments_attributes]['0']
-        @updating_params[:order][:payments_attributes]['0'][:amount] = order_total_after_partial_payments
+      if @updating_params[:order][:payments_attributes].first
+        @updating_params[:order][:payments_attributes].first[:amount] = order_total_after_partial_payments
       end
     end
   end
 
-
   def insert_source_params
-    if @updating_params[:payment_source].present?
-      @updating_params[:order][:payments_attributes].values.each do |payment_attrs|
-        source_params = @updating_params[:payment_source][payment_attrs[:payment_method_id]]
-        payment_attrs[:not_to_be_invalidated] = true
-        payment_attrs[:source_attributes] = source_params if source_params
+    #some work to do here so it sorts properly
+    payments_attributes_hash = Hash[@updating_params[:order][:payments_attributes].map.with_index.to_a]
+    # @updating_params[:order][:payments_attributes] = [{}]
+
+    if @updating_params[:payment_source].present? 
+      @updating_params[:payment_source].each do |payment_method_id,payment_source_attributes|     
+        payments_attributes = {:payment_method_id => payment_method_id, :not_to_be_invalidated => true, :source_attributes => payment_source_attributes} 
+        
+        puts payment_method_id
+        puts payments_attributes
+
+        if payment_method_id == '23' #this needs to work for all partial types
+          payments_attributes[:amount] = 5  #this needs to go out and get the max amount
+        end 
+
+        if {"payment_method_id" => payment_method_id}.in?(@updating_params[:order][:payments_attributes])
+          @updating_params[:order][:payments_attributes][payments_attributes_hash[{"payment_method_id" => payment_method_id}]] = payments_attributes
+        else
+          @updating_params[:order][:payments_attributes] <<  payments_attributes
+        end
       end
       @updating_params.delete(:payment_source)
     end
@@ -59,8 +73,8 @@ Spree::Order.class_eval do
 
   def order_total_after_partial_payments
     amount = 0
-    @updating_params[:order][:payments_attributes].values.each do |payment_attrs|
-      amount += payment_attrs[:amount].to_f
+    @updating_params[:order][:payments_attributes].each do |payments_attributes|
+      amount += payments_attributes[:amount].to_f
     end
     outstanding_balance - amount
   end
