@@ -2,12 +2,8 @@ Spree::Order.class_eval do
   before_validation :invalidate_old_payments, :if => :payment?
   validate :ensure_only_one_non_partial_payment_method_present_if_multiple_payments, :if => :payment?
 
-  def available_payment_methods
-    @available_payment_methods ||= Spree::PaymentMethod.available_on_checkout(user ? false : true)
-  end
-
   def available_partial_payments
-    @available_partial_payments ||= available_payment_methods.select(&:for_partial?)
+    @available_partial_payments ||= Spree::PaymentMethod.active(user ? false : true).select(&:for_partial?)
   end
 
   private
@@ -46,26 +42,20 @@ Spree::Order.class_eval do
   end
 
   def insert_source_params
-    #some work to do here so it sorts properly
-    payments_attributes_hash = Hash[@updating_params[:order][:payments_attributes].map.with_index.to_a]
-    # @updating_params[:order][:payments_attributes] = [{}]
+    #payments_attributes_hash = Hash[@updating_params[:order][:payments_attributes].map.with_index.to_a]
+    @updating_params[:order][:payments_attributes] = [{}]
 
     if @updating_params[:payment_source].present? 
       @updating_params[:payment_source].each do |payment_method_id,payment_source_attributes|     
         payments_attributes = {:payment_method_id => payment_method_id, :not_to_be_invalidated => true, :source_attributes => payment_source_attributes} 
-        
-        puts payment_method_id
-        puts payments_attributes
 
-        if payment_method_id == '23' #this needs to work for all partial types
-          payments_attributes[:amount] = 5  #this needs to go out and get the max amount
+        if Spree::PaymentMethod.find(payment_method_id).for_partial?
+          # funds = Spree::PaymentMethod.find_by(id:payment_method_id).available_funds
+          # puts funds
+          # payments_attributes[:amount] = funds  #this needs to go out and get the max amount
+          payments_attributes[:amount] = 5
         end 
-
-        if {"payment_method_id" => payment_method_id}.in?(@updating_params[:order][:payments_attributes])
-          @updating_params[:order][:payments_attributes][payments_attributes_hash[{"payment_method_id" => payment_method_id}]] = payments_attributes
-        else
-          @updating_params[:order][:payments_attributes] <<  payments_attributes
-        end
+        @updating_params[:order][:payments_attributes] <<  payments_attributes
       end
       @updating_params.delete(:payment_source)
     end

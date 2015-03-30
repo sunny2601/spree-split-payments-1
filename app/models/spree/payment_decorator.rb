@@ -11,6 +11,8 @@ Spree::Payment.class_eval do
     end
 
     def mark_partial_if_payment_method_is_partial
-      self.is_partial = true if payment_method.for_partial?
+      if payment_method && payment_method.for_partial?
+        self.is_partial = true
+      end
     end
 end
