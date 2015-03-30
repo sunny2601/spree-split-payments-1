@@ -39,10 +39,11 @@ Spree::Order.class_eval do
         @updating_params[:order][:payments_attributes].first[:amount] = order_total_after_partial_payments
       end
     end
+    pp @updating_params
   end
 
   def insert_source_params
-    #payments_attributes_hash = Hash[@updating_params[:order][:payments_attributes].map.with_index.to_a]
+    payments_attributes_hash = Hash[@updating_params[:order][:payments_attributes].map.with_index.to_a]
     @updating_params[:order][:payments_attributes] = [{}]
 
     if @updating_params[:payment_source].present? 
@@ -50,10 +51,14 @@ Spree::Order.class_eval do
         payments_attributes = {:payment_method_id => payment_method_id, :not_to_be_invalidated => true, :source_attributes => payment_source_attributes} 
 
         if Spree::PaymentMethod.find(payment_method_id).for_partial?
-          # funds = Spree::PaymentMethod.find_by(id:payment_method_id).available_funds
-          # puts funds
-          # payments_attributes[:amount] = funds  #this needs to go out and get the max amount
-          payments_attributes[:amount] = 5
+          #currently assuming that the only partial payment will be a valutec card
+          card = Stumptown::Valutec::Card.new({card_number:payment_source_attributes[:number]})
+          available_funds = card.balance.result
+          if available_funds >= outstanding_balance
+            payments_attributes[:amount] = outstanding_balance
+          else
+            payments_attributes[:amount] = available_funds
+          end
         end 
         @updating_params[:order][:payments_attributes] <<  payments_attributes
       end
