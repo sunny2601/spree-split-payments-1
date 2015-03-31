@@ -6,6 +6,23 @@ Spree::Order.class_eval do
     @available_partial_payments ||= Spree::PaymentMethod.active(user ? false : true).select(&:for_partial?)
   end
 
+  def active_partial_payments?
+    payments.valid.select(&:is_partial).count > 0
+  end
+
+  def active_partial_payments
+    payments.valid.select(&:is_partial)
+  end
+
+  def display_total
+      order_total = total
+      active_partial_payments.each do |payment|
+        order_total -= payment.amount
+      end
+
+      Spree::Money.new(order_total, { currency: currency })
+  end
+
   private
 
   def checkout_payments

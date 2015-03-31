@@ -6,6 +6,11 @@ Spree::Payment.class_eval do
     where(is_partial: true)
   end
 
+  def display_amount
+    negative_amount = amount * -1
+    Spree::Money.new(negative_amount, { currency: currency })
+  end
+
   private
     def invalidate_old_payments
     end
