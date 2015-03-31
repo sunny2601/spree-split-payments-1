@@ -17,28 +17,4 @@ Gem::Specification.new do |s|
   s.requirements = ["none"]
   s.rubygems_version = "2.2.2"
   s.summary = "Provides the feature for a Spree store to allow user to club payment methods to pay for the order"
-
-  # if s.respond_to? :specification_version then
-  #   s.specification_version = 4
-
-  #   if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-  #     s.add_runtime_dependency(%q<spree_core>, ["~> 2.2.0"])
-  #     s.add_development_dependency(%q<database_cleaner>, [">= 0"])
-  #     s.add_development_dependency(%q<rspec-rails>, ["~> 2.13"])
-  #     s.add_development_dependency(%q<simplecov>, [">= 0"])
-  #     s.add_development_dependency(%q<sqlite3>, [">= 0"])
-  #   else
-  #     s.add_dependency(%q<spree_core>, ["~> 2.2.0"])
-  #     s.add_dependency(%q<database_cleaner>, [">= 0"])
-  #     s.add_dependency(%q<rspec-rails>, ["~> 2.13"])
-  #     s.add_dependency(%q<simplecov>, [">= 0"])
-  #     s.add_dependency(%q<sqlite3>, [">= 0"])
-  #   end
-  # else
-  #   s.add_dependency(%q<spree_core>, ["~> 2.2.0"])
-  #   s.add_dependency(%q<database_cleaner>, [">= 0"])
-  #   s.add_dependency(%q<rspec-rails>, ["~> 2.13"])
-  #   s.add_dependency(%q<simplecov>, [">= 0"])
-  #   s.add_dependency(%q<sqlite3>, [">= 0"])
-  # end
 end
