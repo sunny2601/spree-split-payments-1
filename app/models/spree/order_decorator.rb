@@ -70,18 +70,24 @@ Spree::Order.class_eval do
         }
 
         if Spree::PaymentMethod.find(payment_method_id).for_partial?
-          #currently assuming that the only partial payment will be a valutec card
-          card = Stumptown::Valutec::Card.new(
-            card_number: payment_source_attributes[:number]
-            )
-          available_funds = card.balance.result
-          if available_funds >= outstanding_balance
-            payments_attributes[:amount] = outstanding_balance
+          if !payment_source_attributes[:number].empty? #dont set payments_attributes to the order if the gift card number is empty
+            #currently assuming that the only partial payment will be a valutec card
+            card = Stumptown::Valutec::Card.new(
+              card_number: payment_source_attributes[:number]
+              )
+            available_funds = card.balance.result
+            if available_funds >= outstanding_balance
+              payments_attributes[:amount] = outstanding_balance
+            else
+              payments_attributes[:amount] = available_funds
+            end
+            @updating_params[:order][:payments_attributes] <<  payments_attributes
           else
-            payments_attributes[:amount] = available_funds
+            #do nothing
           end
-        end 
-        @updating_params[:order][:payments_attributes] <<  payments_attributes
+        else
+          @updating_params[:order][:payments_attributes] <<  payments_attributes
+        end
       end
       @updating_params.delete(:payment_source)
     end
