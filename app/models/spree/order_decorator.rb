@@ -14,13 +14,16 @@ Spree::Order.class_eval do
     payments.valid.select(&:is_partial)
   end
 
-  def display_total
-      order_total = total
-      active_partial_payments.each do |payment|
-        order_total -= payment.amount
-      end
+  def active_partial_payment_total
+    total = 0
+    active_partial_payments.each do |payment|
+      total += payment.amount
+    end
+    total
+  end
 
-      Spree::Money.new(order_total, { currency: currency })
+  def display_total
+    Spree::Money.new(total - active_partial_payment_total, { currency: currency })
   end
 
   private
@@ -51,45 +54,67 @@ Spree::Order.class_eval do
   def update_params_payment_source
     if has_checkout_step?("payment") && self.payment?
       insert_source_params
-
-      if @updating_params[:order][:payments_attributes].first
-        @updating_params[:order][:payments_attributes].first[:amount] = order_total_after_partial_payments
+      #set order total after partial payments on the first remaining non-partial payment method
+      @updating_params[:order][:payments_attributes].each_with_index do |payments_attrs, index|
+        unless Spree::PaymentMethod.find(payments_attrs[:payment_method_id]).for_partial?
+          @updating_params[:order][:payments_attributes][index][:amount] = order_total_after_partial_payments
+          break
+        end
       end
     end
   end
 
   def insert_source_params
     @updating_params[:order][:payments_attributes] = []
+    return unless @updating_params[:payment_source].present?
 
-    if @updating_params[:payment_source].present? 
-      @updating_params[:payment_source].each do |payment_method_id,payment_source_attributes|     
+    # force procesing of partial paymets first
+    insert_source_params_for_partial_payments
+
+    if order_total_after_partial_payments > 0
+      insert_souce_params_for_other_payments
+    end
+
+    @updating_params.delete(:payment_source)
+  end
+
+  def insert_souce_params_for_other_payments
+    # not do non-partials if it still necessary
+    @updating_params[:payment_source].each do |payment_method_id,payment_source_attributes|
+      unless Spree::PaymentMethod.find(payment_method_id).for_partial?
         payments_attributes = {
           payment_method_id: payment_method_id,
           not_to_be_invalidated: true,
           source_attributes: payment_source_attributes
         }
+        @updating_params[:order][:payments_attributes] <<  payments_attributes
+      end
+    end
+  end
 
-        if Spree::PaymentMethod.find(payment_method_id).for_partial?
-          if !payment_source_attributes[:number].empty? #dont set payments_attributes to the order if the gift card number is empty
-            #currently assuming that the only partial payment will be a valutec card
-            card = Stumptown::Valutec::Card.new(
-              card_number: payment_source_attributes[:number]
-              )
-            available_funds = card.balance.result
-            if available_funds >= outstanding_balance
-              payments_attributes[:amount] = outstanding_balance
-            else
-              payments_attributes[:amount] = available_funds
-            end
-            @updating_params[:order][:payments_attributes] <<  payments_attributes
+  def insert_source_params_for_partial_payments
+    @updating_params[:payment_source].each do |payment_method_id,payment_source_attributes| 
+      if Spree::PaymentMethod.find(payment_method_id).for_partial?
+        payments_attributes = {
+          payment_method_id: payment_method_id,
+          not_to_be_invalidated: true,
+          source_attributes: payment_source_attributes
+        }
+        #dont set payments_attributes to the order if the gift card number is empty
+        #currently assuming that the only partial payment will be a valutec card
+        if !payment_source_attributes[:number].empty? 
+          card = Stumptown::Valutec::Card.new(
+            card_number: payment_source_attributes[:number]
+            )
+          available_funds = card.balance.result
+          if available_funds >= outstanding_balance
+            payments_attributes[:amount] = outstanding_balance
           else
-            #do nothing
+            payments_attributes[:amount] = available_funds
           end
-        else
           @updating_params[:order][:payments_attributes] <<  payments_attributes
         end
       end
-      @updating_params.delete(:payment_source)
     end
   end
 
