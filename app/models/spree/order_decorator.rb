@@ -55,7 +55,7 @@ Spree::Order.class_eval do
     if has_checkout_step?("payment") && self.payment?
       # if existing card, make sure it is the first payemnt in the index
       @existing_card_id = @updating_params[:order] ? @updating_params[:order][:existing_card] : nil
-
+      @existing_card_payment_id = @updating_params[:order] ? @updating_params[:order][:payments_attributes].first[:payment_method_id] : nil
       insert_source_params
       # If existing card, rotate the array so the partial
       # payment won't be the fist position in the
@@ -99,7 +99,7 @@ Spree::Order.class_eval do
   def insert_souce_params_for_other_payments
     @updating_params[:payment_source].each do |payment_method_id,payment_source_attributes|
       unless Spree::PaymentMethod.find(payment_method_id).for_partial?
-        if (payment_source_attributes[:number].empty? && !@existing_card_id.nil?) || !payment_source_attributes[:number].empty?
+        if (payment_source_attributes[:number].empty? && !@existing_card_id.nil?) && @existing_card_payment_id == payment_method_id || (!payment_source_attributes[:number].empty? && @existing_card_id.nil?)
           payments_attributes = {
             payment_method_id: payment_method_id,
             not_to_be_invalidated: true,
