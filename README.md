@@ -1,11 +1,11 @@
-Spree Split Payments [![Code Climate](https://codeclimate.com/github/vinsol/spree-split-payments.png)](https://codeclimate.com/github/vinsol/spree-split-payments) [![Build Status](https://travis-ci.org/vinsol/spree-split-payments.png?branch=master)](https://travis-ci.org/vinsol/spree-split-payments)
+Spree Split Payments 
 =========================
-
-######THIS GEM IS NOT READY FOR PRODUCTION USE.
 
 This extension provides the feature for a spree store to allow user to club payment methods to pay for the order.
 
 Easily configurable from the admin end where one can select which payment methods should be allowed for clubbing and their priorities which can be used while creating payments and displaying them to the user.
+
+It has been customized extensively by Instrument to be compatible with Spree 2.4.4
 
 Installation
 ------------
@@ -25,6 +25,8 @@ bundle exec rails g spree_split_payments:install
 
 Integration
 -----------
+This is not in use as this is implemented for Instrument.
+
 The extension needs a way to find out the maximum amount that can be made via a payment method. To do so it sends a message to the user object as:
 
 ```ruby
@@ -89,6 +91,21 @@ Contributing
 5. Make your changes.
 6. Ensure specs pass by running `bundle exec rspec spec`.
 7. Submit your pull request.
+
+Instrument Implementation
+-------------------------
+
+This gem has been customized for Instrument and relies on the Stumptown::Valutec library and the Valutec model in the Spree application this was written to be used for.
+
+This gem was tailored to a loyalty type program to split payments. We have customised it to use external payment programs, specifically the Valutec Gift Card program we have integrated. On checkout, the updating parameters are sorted and filtered by this gem when the update_params_payment_souce is called in Spree::Checkout.update. The params are sorted and blank ones are discarded. Partial payments are added to the order first and if to total of the partial payment are enough to cover the order total, then all other payment methods are discarded. Care is taken to preven downstream problems from this action.
+
+If the payment is required after the partial payments are saved, then other forms of payment are saved.
+
+A user can submit mulitple gift cards for multiple partial payments. They may not apply the same gift card number to the same order more than once. 
+
+Once a gift card is added as payment to an order it may not be removed however each time credit card information is entered, any existing non partial payments will be invalidated. For example if a user enters a credit card and a payment record is created in the spree database, if the user leaves the payment flow, and returne, that payment record will be invalidated and any future credit card payments will supercede. That is not the case with Gift Card partial payments; they will remain.
+
+In general there are some significant logic gymnastics conducted to support the front end flow for submitting the entire payment form for a gift card AND then later for any credit card payments. 
 
 
 Credits
