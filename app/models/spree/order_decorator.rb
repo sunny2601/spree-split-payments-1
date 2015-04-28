@@ -1,5 +1,5 @@
 Spree::Order.class_eval do
-  before_validation :invalidate_old_payments, :if => :payment?
+  before_validation :invalidate_old_non_partial_payments, :if => :payment?
   validate :ensure_only_one_non_partial_payment_method_present_if_multiple_payments, :if => :payment?
 
   def available_partial_payments
@@ -32,9 +32,9 @@ Spree::Order.class_eval do
     payments.select { |payment| payment.checkout? }
   end
 
-  def invalidate_old_payments
+  def invalidate_old_non_partial_payments
     checkout_payments.each do |payment|
-      if !payment.not_to_be_invalidated
+      if !payment.not_to_be_invalidated && !payment.is_partial
         payment.invalidate!
       end
     end
@@ -60,8 +60,13 @@ Spree::Order.class_eval do
       # If existing card, rotate the array so the partial
       # payment won't be the fist position in the
       # array. This is important because of the next step
-      if @existing_card_id.present?
+      if @existing_card_id.present? && @updating_params[:order].key?(:payments_attributes)
         @updating_params[:order][:payments_attributes].rotate!
+      else
+        # If existing card id is set, but card (payments_attributes) 
+        # information is not submitted the next step pukes
+        # removing it.
+        @updating_params[:order].except!(:existing_card)
       end
 
       return unless @updating_params[:order].key?(:payments_attributes)
@@ -96,19 +101,30 @@ Spree::Order.class_eval do
     @updating_params.delete(:payment_source)
   end
 
+  def partial_payment_source_exists?(payment_attributes)
+    checkout_payments.each do |payment|
+      if payment.source.number.to_s == payment_attributes[:source_attributes]['number'].to_s 
+        return true
+      end
+    end
+    false
+  end
+   
+
   def insert_souce_params_for_other_payments
     @updating_params[:payment_source].each do |payment_method_id,payment_source_attributes|
       unless Spree::PaymentMethod.find(payment_method_id).for_partial?
         if (payment_source_attributes[:number].empty? && !@existing_card_id.nil?) && @existing_card_payment_id == payment_method_id || (!payment_source_attributes[:number].empty? && @existing_card_id.nil?)
           payments_attributes = {
             payment_method_id: payment_method_id,
-            not_to_be_invalidated: true,
-            source_attributes: payment_source_attributes
+            source_attributes: payment_source_attributes,
+            not_to_be_invalidated: true
           }
           @updating_params[:order][:payments_attributes] <<  payments_attributes
         end
       end
     end
+
   end
 
   def insert_source_params_for_partial_payments
@@ -116,8 +132,8 @@ Spree::Order.class_eval do
       if Spree::PaymentMethod.find(payment_method_id).for_partial?
         payments_attributes = {
           payment_method_id: payment_method_id,
-          not_to_be_invalidated: true,
-          source_attributes: payment_source_attributes
+          source_attributes: payment_source_attributes,
+          not_to_be_invalidated: true
         }
         #dont set payments_attributes to the order if the gift card number is empty
         #currently assuming that the only partial payment will be a valutec card
@@ -126,15 +142,16 @@ Spree::Order.class_eval do
             card_number: payment_source_attributes[:number]
             )
           available_funds = card.balance.result
-          if available_funds >= outstanding_balance
-            payments_attributes[:amount] = outstanding_balance
-
+          if available_funds >= order_total_after_partial_payments
+            payments_attributes[:amount] = order_total_after_partial_payments
             @updating_params[:order].delete(:existing_card) if @existing_card_id
-          
           else
             payments_attributes[:amount] = available_funds
           end
-          @updating_params[:order][:payments_attributes] <<  payments_attributes
+          
+          unless partial_payment_source_exists?(payments_attributes)
+            @updating_params[:order][:payments_attributes] <<  payments_attributes
+          end
         end
       end
     end
@@ -145,6 +162,6 @@ Spree::Order.class_eval do
     @updating_params[:order][:payments_attributes].each do |payments_attributes|
       amount += payments_attributes[:amount].to_f
     end
-    (outstanding_balance - amount).round(2)
+    (outstanding_balance - active_partial_payment_total - amount).round(2)
   end
 end
